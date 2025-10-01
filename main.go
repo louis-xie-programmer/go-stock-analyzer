@@ -9,7 +9,7 @@ import (
 func main() {
 	stockFile := "stock_list.csv"
 	resultDir := "results"
-	hour, minute := 10, 0
+	hour, minute := 15, 0
 	workerNum := 20
 
 	if _, err := os.Stat(resultDir); os.IsNotExist(err) {

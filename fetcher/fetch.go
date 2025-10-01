@@ -23,10 +23,16 @@ func FetchHistoricalClose(stockCode string, days int) ([]float64, error) {
 	cacheLock.Unlock()
 
 	url := fmt.Sprintf("http://hq.sinajs.cn/list=%s", stockCode)
-	resp, err := http.Get(url)
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Add("referer", "http://finance.sina.com.cn/")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	data := string(body)
