@@ -1,0 +1,23 @@
+db_path: "stock.db"
+stock_list_path: "stock_list.csv"
+kline_days: 120
+update_hour: 15
+update_minute: 0
+combination: "all"
+
+strategies:
+  - name: "MA"
+    enabled: true
+    params:
+      ma: 20
+      hold_days: 3
+  - name: "MACD"
+    enabled: true
+  - name: "Composite"
+    enabled: true
+    params:
+      hold_days: 3
+  - name: "DSL"
+    enabled: true
+    params:
+      expr: "close > ma20 AND macd_dif > macd_dea"
