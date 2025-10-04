@@ -3,7 +3,9 @@ module go-stock-analyzer
 go 1.25.1
 
 require (
+	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/gin-gonic/gin v1.11.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/mattn/go-sqlite3 v1.14.32
 	gopkg.in/yaml.v2 v2.4.0
 )

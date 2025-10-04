@@ -1,8 +1,6 @@
 package strategy
 
-import (
-	"go-stock-analyzer/backend/storage"
-)
+import "go-stock-analyzer/backend/storage"
 
 type MAStrategy struct {
 	MA       int

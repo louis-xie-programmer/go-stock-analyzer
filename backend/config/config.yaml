@@ -1,10 +1,9 @@
-db_path: "stock.db"
+db_path: "backend/stock.db"
 stock_list_path: "stock_list.csv"
 kline_days: 120
 update_hour: 15
 update_minute: 0
 combination: "all"
-
 strategies:
   - name: "MA"
     enabled: true

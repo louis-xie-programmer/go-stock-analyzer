@@ -1,2 +1,4 @@
 /.idea
+/.vscode
 /results
+/frontend/node_modules

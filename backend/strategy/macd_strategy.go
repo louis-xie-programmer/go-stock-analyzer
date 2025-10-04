@@ -1,8 +1,6 @@
 package strategy
 
-import (
-	"go-stock-analyzer/backend/storage"
-)
+import "go-stock-analyzer/backend/storage"
 
 type MACDStrategy struct{}
 
@@ -16,6 +14,5 @@ func (s *MACDStrategy) Match(code string, klines []storage.KLine) bool {
 	}
 	prev := klines[len(klines)-2]
 	last := klines[len(klines)-1]
-	// DIF 从下向上突破 DEA
 	return prev.DIF < prev.DEA && last.DIF > last.DEA
 }

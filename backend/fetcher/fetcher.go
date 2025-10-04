@@ -3,25 +3,26 @@ package fetcher
 import (
 	"encoding/json"
 	"fmt"
-	"go-stock-analyzer/backend/storage"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
+
+	"go-stock-analyzer/backend/storage"
 )
 
-// FetchAndCompute 获取市场数据（新浪）
-func FetchAndCompute(stockCode string, days int) ([]storage.KLine, error) {
-	url := fmt.Sprintf(
-		"http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s&scale=240&ma=no&datalen=%d",
-		stockCode, days)
-	resp, err := http.Get(url)
+// FetchAndCompute fetches historical daily kline from sina and computes indicators
+func FetchAndCompute(symbol string, days int) ([]storage.KLine, error) {
+	url := fmt.Sprintf("http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s&scale=240&ma=no&datalen=%d", symbol, days)
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	var data []struct {
+	var raw []struct {
 		Day    string `json:"day"`
 		Open   string `json:"open"`
 		High   string `json:"high"`
@@ -29,37 +30,44 @@ func FetchAndCompute(stockCode string, days int) ([]storage.KLine, error) {
 		Close  string `json:"close"`
 		Volume string `json:"volume"`
 	}
-	json.Unmarshal(body, &data)
+	if err := json.Unmarshal(body, &raw); err != nil {
+		// return raw body as error context
+		return nil, err
+	}
 
-	klines := []storage.KLine{}
-	closes := []float64{}
-	for _, d := range data {
-		open, _ := strconv.ParseFloat(d.Open, 64)
-		high, _ := strconv.ParseFloat(d.High, 64)
-		low, _ := strconv.ParseFloat(d.Low, 64)
-		closePrice, _ := strconv.ParseFloat(d.Close, 64)
-		volume, _ := strconv.ParseFloat(d.Volume, 64)
-		closes = append(closes, closePrice)
-
-		klines = append(klines, storage.KLine{
-			Code:   stockCode,
-			Date:   d.Day,
+	klines := make([]storage.KLine, 0, len(raw))
+	closes := make([]float64, 0, len(raw))
+	for _, r := range raw {
+		open, _ := strconv.ParseFloat(r.Open, 64)
+		high, _ := strconv.ParseFloat(r.High, 64)
+		low, _ := strconv.ParseFloat(r.Low, 64)
+		closep, _ := strconv.ParseFloat(r.Close, 64)
+		vol, _ := strconv.ParseFloat(r.Volume, 64)
+		k := storage.KLine{
+			Code:   symbol,
+			Date:   r.Day,
 			Open:   open,
 			High:   high,
 			Low:    low,
-			Close:  closePrice,
-			Volume: volume,
-		})
+			Close:  closep,
+			Volume: vol,
+		}
+		klines = append(klines, k)
+		closes = append(closes, closep)
 	}
 
+	// compute indicators per point
 	for i := range klines {
-		subCloses := closes[:i+1]
-		klines[i].MA5 = CalcMA(subCloses, 5)
-		klines[i].MA10 = CalcMA(subCloses, 10)
-		klines[i].MA20 = CalcMA(subCloses, 20)
-		klines[i].MA30 = CalcMA(subCloses, 30)
-		dif, dea, macd := CalcMACD(subCloses)
-		klines[i].DIF, klines[i].DEA, klines[i].MACD = dif, dea, macd
+		sub := closes[:i+1]
+		klines[i].MA5 = CalcMA(sub, 5)
+		klines[i].MA10 = CalcMA(sub, 10)
+		klines[i].MA20 = CalcMA(sub, 20)
+		klines[i].MA30 = CalcMA(sub, 30)
+		dif, dea, macd := CalcMACD(sub)
+		klines[i].DIF = dif
+		klines[i].DEA = dea
+		klines[i].MACD = macd
 	}
+
 	return klines, nil
 }

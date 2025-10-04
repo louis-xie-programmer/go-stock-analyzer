@@ -1,33 +1,46 @@
 package fetcher
 
-func CalcMA(prices []float64, period int) float64 {
-	if len(prices) < period {
+// simple indicator implementations
+
+func CalcMA(values []float64, n int) float64 {
+	if len(values) < n {
 		return 0
 	}
 	sum := 0.0
-	for i := len(prices) - period; i < len(prices); i++ {
-		sum += prices[i]
+	for i := len(values) - n; i < len(values); i++ {
+		sum += values[i]
 	}
-	return sum / float64(period)
+	return sum / float64(n)
 }
 
-func CalcEMA(prices []float64, period int) float64 {
-	if len(prices) < period {
-		return 0
+func CalcEMASequence(values []float64, period int) []float64 {
+	n := len(values)
+	out := make([]float64, n)
+	if n == 0 {
+		return out
 	}
-	multiplier := 2.0 / float64(period+1)
-	ema := prices[0]
-	for i := 1; i < len(prices); i++ {
-		ema = (prices[i]-ema)*multiplier + ema
+	mult := 2.0 / float64(period+1)
+	out[0] = values[0]
+	for i := 1; i < n; i++ {
+		out[i] = (values[i]-out[i-1])*mult + out[i-1]
 	}
-	return ema
+	return out
 }
 
-func CalcMACD(prices []float64) (dif, dea, macd float64) {
-	ema12 := CalcEMA(prices, 12)
-	ema26 := CalcEMA(prices, 26)
-	dif = ema12 - ema26
-	dea = CalcEMA([]float64{dif}, 9)
+func CalcMACD(values []float64) (dif, dea, macd float64) {
+	if len(values) == 0 {
+		return 0, 0, 0
+	}
+	ema12 := CalcEMASequence(values, 12)
+	ema26 := CalcEMASequence(values, 26)
+	difSeries := make([]float64, len(values))
+	for i := range values {
+		difSeries[i] = ema12[i] - ema26[i]
+	}
+	deaSeries := CalcEMASequence(difSeries, 9)
+	last := len(values) - 1
+	dif = difSeries[last]
+	dea = deaSeries[last]
 	macd = 2 * (dif - dea)
 	return
 }

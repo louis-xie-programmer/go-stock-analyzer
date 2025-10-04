@@ -1,21 +1,30 @@
 package scheduler
 
 import (
+	"log"
+	"time"
+
 	"go-stock-analyzer/backend/config"
 	"go-stock-analyzer/backend/fetcher"
 	"go-stock-analyzer/backend/storage"
 	"go-stock-analyzer/backend/strategy"
-	"time"
 )
 
 func DailyUpdate(stocks []string) {
+	log.Println("DailyUpdate: start fetching and computing...")
 	for _, code := range stocks {
 		klines, err := fetcher.FetchAndCompute(code, config.Cfg.KLineDays)
-		if err == nil {
-			storage.SaveKLines(code, klines)
+		if err != nil {
+			log.Printf("fetch error %s: %v\n", code, err)
+			continue
+		}
+		if err := storage.SaveKLines(code, klines); err != nil {
+			log.Printf("save klines error %s: %v\n", code, err)
 		}
 	}
+	log.Println("Running strategies...")
 	strategy.RunAll(stocks)
+	log.Println("DailyUpdate: done")
 }
 
 func ScheduleDailyUpdate(stocks []string) {
@@ -26,7 +35,9 @@ func ScheduleDailyUpdate(stocks []string) {
 			if now.After(next) {
 				next = next.Add(24 * time.Hour)
 			}
-			time.Sleep(time.Until(next))
+			sleep := time.Until(next)
+			log.Printf("Scheduler sleeping until %v\n", next)
+			time.Sleep(sleep)
 			DailyUpdate(stocks)
 		}
 	}()

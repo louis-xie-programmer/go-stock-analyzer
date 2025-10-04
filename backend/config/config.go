@@ -7,14 +7,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// StrategyConfig 策略配置
 type StrategyConfig struct {
 	Name    string                 `yaml:"name"`
 	Enabled bool                   `yaml:"enabled"`
 	Params  map[string]interface{} `yaml:"params"`
 }
 
-// Config 系统配置
 type Config struct {
 	DBPath        string           `yaml:"db_path"`
 	StockListPath string           `yaml:"stock_list_path"`
@@ -27,7 +25,6 @@ type Config struct {
 
 var Cfg Config
 
-// LoadConfig 加载配置
 func LoadConfig(path string) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
