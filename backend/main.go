@@ -43,14 +43,17 @@ func main() {
 		stocks = []string{"sz000001"}
 	}
 
+	// 抓取所有股票列表
+	scheduler.Start()
+
 	// initial update
-	scheduler.DailyUpdate(stocks)
+	// scheduler.DailyUpdate(stocks)
 
 	// start realtime polling
 	realtime.StartPolling(stocks, 2*time.Second)
 
 	// schedule daily updates
-	scheduler.ScheduleDailyUpdate(stocks)
+	//scheduler.ScheduleDailyUpdate(stocks)
 
 	log.Println("Starting web server on :8080")
 	web.RunServer()

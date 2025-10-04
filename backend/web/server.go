@@ -9,8 +9,14 @@ import (
 
 func RunServer() {
 	r := gin.Default()
+	// 提供股票列表接口
+	r.GET("/api/stocks", GetStocksHandler)
 	r.GET("/api/results", GetResults)
 	r.POST("/api/dsl/test", TestDSL)
+
+	r.GET("/api/watchlist", GetWatchlistHandler)
+	r.POST("/api/watchlist/add", AddWatchlistHandler)
+	r.DELETE("/api/watchlist/remove", RemoveWatchlistHandler)
 
 	r.GET("/ws/realtime", func(c *gin.Context) {
 		realtime.HandleWebSocket(c.Writer, c.Request)
