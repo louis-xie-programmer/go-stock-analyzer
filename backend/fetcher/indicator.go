@@ -1,7 +1,5 @@
 package fetcher
 
-// simple indicator implementations
-
 func CalcMA(values []float64, n int) float64 {
 	if len(values) < n {
 		return 0
@@ -10,6 +8,7 @@ func CalcMA(values []float64, n int) float64 {
 	for i := len(values) - n; i < len(values); i++ {
 		sum += values[i]
 	}
+
 	return sum / float64(n)
 }
 

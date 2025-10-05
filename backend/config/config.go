@@ -15,12 +15,17 @@ type StrategyConfig struct {
 
 type Config struct {
 	DBPath        string           `yaml:"db_path"`
-	StockListPath string           `yaml:"stock_list_path"`
 	KLineDays     int              `yaml:"kline_days"`
 	UpdateHour    int              `yaml:"update_hour"`
 	UpdateMinute  int              `yaml:"update_minute"`
 	Combination   string           `yaml:"combination"`
 	Strategies    []StrategyConfig `yaml:"strategies"`
+	// Worker pool settings for startup watchlist KLine fetch
+	WorkerConcurrency  int `yaml:"worker_concurrency"`
+	WorkerRetries      int `yaml:"worker_retries"`
+	WorkerDelayMs      int `yaml:"worker_delay_ms"`
+	WorkerBackoffMs    int `yaml:"worker_backoff_ms"`
+	WatchlistKlineDays int `yaml:"watchlist_kline_days"`
 }
 
 var Cfg Config

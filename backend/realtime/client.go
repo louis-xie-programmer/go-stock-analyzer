@@ -13,6 +13,7 @@ type Client struct {
 	subs map[string]bool
 }
 
+// 处理客户端消息
 func (c *Client) readPump() {
 	defer func() {
 		h.unregister <- c
@@ -43,6 +44,7 @@ func (c *Client) readPump() {
 	}
 }
 
+// 向客户端发送消息
 func (c *Client) writePump() {
 	for {
 		msg, ok := <-c.send

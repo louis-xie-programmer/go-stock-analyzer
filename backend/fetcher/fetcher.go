@@ -3,25 +3,29 @@ package fetcher
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"go-stock-analyzer/backend/storage"
 )
 
-// FetchAndCompute fetches historical daily kline from sina and computes indicators
-func FetchAndCompute(symbol string, days int) ([]storage.KLine, error) {
+// 获取指定股票的日 K 线数据并计算常用指标（MA, MACD）
+func FetchKLine(symbol string, days int) ([]storage.KLine, error) {
 	url := fmt.Sprintf("http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s&scale=240&ma=no&datalen=%d", symbol, days)
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	text := strings.TrimSpace(string(body))
+	if text == "" || text == "null" {
+		return nil, fmt.Errorf("empty kline for %s", symbol)
+	}
 	var raw []struct {
 		Day    string `json:"day"`
 		Open   string `json:"open"`
@@ -30,11 +34,9 @@ func FetchAndCompute(symbol string, days int) ([]storage.KLine, error) {
 		Close  string `json:"close"`
 		Volume string `json:"volume"`
 	}
-	if err := json.Unmarshal(body, &raw); err != nil {
-		// return raw body as error context
+	if err := json.Unmarshal([]byte(text), &raw); err != nil {
 		return nil, err
 	}
-
 	klines := make([]storage.KLine, 0, len(raw))
 	closes := make([]float64, 0, len(raw))
 	for _, r := range raw {
@@ -55,8 +57,7 @@ func FetchAndCompute(symbol string, days int) ([]storage.KLine, error) {
 		klines = append(klines, k)
 		closes = append(closes, closep)
 	}
-
-	// compute indicators per point
+	// 计算指标
 	for i := range klines {
 		sub := closes[:i+1]
 		klines[i].MA5 = CalcMA(sub, 5)
@@ -68,6 +69,5 @@ func FetchAndCompute(symbol string, days int) ([]storage.KLine, error) {
 		klines[i].DEA = dea
 		klines[i].MACD = macd
 	}
-
 	return klines, nil
 }

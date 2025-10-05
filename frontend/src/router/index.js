@@ -1,14 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ResultView from '../views/ResultView.vue'
 import DSLTester from '../views/DSLTester.vue'
-import RealtimeView from '../views/RealtimeView.vue'
 import StockPoolView from '../views/StockPoolView.vue'
+import StockDetailView from '../views/StockDetailView.vue'
+import BoardView from '../views/BoardView.vue'
+import WatchlistView from '../views/WatchlistView.vue'
 
 const routes = [
-  { path: '/', component: ResultView },
+  { path: '/', component: BoardView },
   { path: '/dsl', component: DSLTester },
-  { path: '/realtime', component: RealtimeView },
-    { path: '/stocks', component: StockPoolView },
+  { path: '/stocks', component: StockPoolView },
+  { path: '/stocks/:symbol', component: StockDetailView },
+  { path: '/watchlist', component: WatchlistView },
+  { path: '/result', component: ResultView },
 ]
 
 export default createRouter({ history: createWebHistory(), routes })

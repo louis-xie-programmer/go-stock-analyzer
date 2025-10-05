@@ -1,9 +1,14 @@
 db_path: "backend/stock.db"
-stock_list_path: "stock_list.csv"
 kline_days: 120
 update_hour: 12
-update_minute: 18
+update_minute: 56
 combination: "all"
+# worker pool defaults for startup watchlist KLine fetch
+worker_concurrency: 5
+worker_retries: 3
+worker_delay_ms: 200
+worker_backoff_ms: 500
+watchlist_kline_days: 300
 strategies:
   - name: "MA"
     enabled: true

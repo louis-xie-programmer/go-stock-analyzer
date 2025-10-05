@@ -41,7 +41,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	go client.writePump()
 	go client.readPump()
 }
-
+// 广播消息给所有客户端
 func StartPolling(symbols []string, interval time.Duration) {
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -71,6 +71,7 @@ func StartPolling(symbols []string, interval time.Duration) {
 	}()
 }
 
+// 广播消息给所有客户端
 func parseAndBroadcast(raw string) {
 	lines := strings.Split(raw, ";")
 	for _, line := range lines {
