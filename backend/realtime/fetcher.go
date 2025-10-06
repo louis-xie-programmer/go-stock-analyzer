@@ -13,6 +13,35 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var IsMarketOpen = func(code string) bool {
+	// 简单判断是否在交易时间内（9:30-11:30, 13:00-15:00）
+	now := time.Now()
+	weekday := now.Weekday()
+	if weekday == time.Saturday || weekday == time.Sunday {
+		return false
+	}
+	hour := now.Hour()
+	minute := now.Minute()
+	if ((hour == 9 && minute < 30) || (hour < 9) || (hour == 11 && minute > 30)) {
+		return false
+	}
+	if ((hour == 12) || (hour > 15)) {
+		return false
+	}
+
+	quotes, err := FetchSinaQuotes([]string{code}) // 试探性请求，确保行情接口可用
+	if err != nil || len(quotes) == 0 {
+		return false
+	}
+	currDate := now.Format("2006-01-02")
+	has := strings.HasPrefix(quotes[0].Time, currDate+" ")
+	if (has && quotes[0].Price != 0) {
+		return true
+	}
+	
+	return false
+}
+
 type Quote struct {
 	Code      string  `json:"code"`
 	Name      string  `json:"name"`
@@ -41,39 +70,23 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	go client.writePump()
 	go client.readPump()
 }
-// 广播消息给所有客户端
-func StartPolling(symbols []string, interval time.Duration) {
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-		for {
-			for i := 0; i < len(symbols); i += 60 {
-				j := i + 60
-				if j > len(symbols) {
-					j = len(symbols)
-				}
-				batch := symbols[i:j]
-				url := "http://hq.sinajs.cn/list=" + strings.Join(batch, ",")
-				req, _ := http.NewRequest("GET", url, nil)
-				req.Header.Add("Referer", "http://finance.sina.com.cn/")
-				c := &http.Client{}
-				resp, err := c.Do(req)
-				if err != nil {
-					log.Println("realtime poll error:", err)
-					continue
-				}
-				body, _ := io.ReadAll(resp.Body)
-				resp.Body.Close()
-				parseAndBroadcast(string(body))
-			}
-			<-ticker.C
-		}
-	}()
-}
 
-// 广播消息给所有客户端
-func parseAndBroadcast(raw string) {
-	lines := strings.Split(raw, ";")
+func FetchSinaQuotes(codes []string) ([]Quote, error) {
+	url := "http://hq.sinajs.cn/list=" + strings.Join(codes, ",")
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Referer", "http://finance.sina.com.cn/")
+	c := &http.Client{}
+	resp, err := c.Do(req)
+	if err != nil {
+		log.Println("realtime poll error:", err)
+		return nil, err
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	var quotes []Quote
+
+	lines := strings.Split(string(body), ";")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -111,13 +124,45 @@ func parseAndBroadcast(raw string) {
 		}
 		tstr := ""
 		if len(fields) >= 32 {
-			tstr = fields[len(fields)-3] + " " + fields[len(fields)-2]
+			tstr = fields[30] + " " + fields[31]
 		}
 		q := Quote{Code: code, Name: name, Price: price, PrevClose: prev, Open: open, High: high, Low: low, Volume: vol, Time: tstr}
+		quotes = append(quotes, q)
+	}
+	return quotes, nil
+}
+// 广播消息给所有客户端
+func StartPolling(symbols []string, interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			for i := 0; i < len(symbols); i += 60 {
+				j := i + 60
+				if j > len(symbols) {
+					j = len(symbols)
+				}
+				batch := symbols[i:j]
+				quotes, err := FetchSinaQuotes(batch)
+				if err != nil {
+					log.Println("realtime poll error:", err)
+					continue
+				}
+				parseAndBroadcast(quotes)
+			}
+			<-ticker.C
+		}
+	}()
+}
+
+// 广播消息给所有客户端
+func parseAndBroadcast(quotes []Quote) {
+	for _, quote := range quotes {
+		code := quote.Code
 		Snapshot.mu.Lock()
-		Snapshot.m[code] = q
+		Snapshot.m[code] = quote
 		Snapshot.mu.Unlock()
-		b, _ := json.Marshal(q)
+		b, _ := json.Marshal(quote)
 		Broadcast(b)
 	}
 }

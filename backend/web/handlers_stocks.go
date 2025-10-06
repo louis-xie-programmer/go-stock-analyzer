@@ -2,6 +2,7 @@ package web
 
 import (
 	"go-stock-analyzer/backend/fetcher"
+	"go-stock-analyzer/backend/realtime"
 	"go-stock-analyzer/backend/storage"
 	"net/http"
 	"strconv"
@@ -9,6 +10,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// 查询是否开始交易
+// GET /api/is_market_open?code=sz000001
+func IsMarketOpenHandler(c *gin.Context) {
+	code := strings.TrimSpace(c.Query("code"))
+	open := realtime.IsMarketOpen(code)
+	c.JSON(http.StatusOK, gin.H{"is_open": open})
+}
 
 // GET /api/stocks?q=&board=&page=&size=
 func GetStocksHandler(c *gin.Context) {

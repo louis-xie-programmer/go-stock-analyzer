@@ -62,24 +62,7 @@ const MAX_RETRIES = 3
 let klineInst = null
 let wsConn = null
 let wsReconnectTimer = null
-
-// 分时图x轴时间点生成（9:00:00~15:00:00，每5秒一格）
-function generateTimelineXAxis() {
-  // 交易时间轴从 9:30:00 到 15:00:00（包含），每 5 秒一格
-  const start = 9 * 3600 + 30 * 60
-  const end = 15 * 3600
-  const interval = 5
-  const times = []
-  for (let t = start; t <= end; t += interval) {
-    const h = String(Math.floor(t / 3600)).padStart(2, '0')
-    const m = String(Math.floor((t % 3600) / 60)).padStart(2, '0')
-    const s = String(t % 60).padStart(2, '0')
-    times.push(`${h}:${m}:${s}`)
-  }
-  return times
-}
-
-const timelineXAxis = ref(generateTimelineXAxis())
+const isTradingTime = ref(false)
 
 const chartTitle = computed(() => {
   return chartType.value === 'timeline' ? '分时图' : 'K线（最近120日）'
@@ -88,14 +71,14 @@ const chartTitle = computed(() => {
 // 新增：监听图表类型变化
 watch(chartType, async (newType) => {
   if (newType === 'timeline') {
-    if (isTradingTime()){
+    if (isTradingTime.value) {
       ensureWebSocketConnection()
     } else {
       loadLatestTimelineData()
     }
   } else {
-    cleanupWebSocket()
     await renderKline()
+    cleanupWebSocket()
   }
 })
 
@@ -241,7 +224,7 @@ function connectWebSocket() {
     }))
   }
   
-  wsConn.onmessage = (event) => {
+  wsConn.onmessage = async (event) => {
     if (chartType.value !== 'timeline') return
     try {
       const data = JSON.parse(event.data)
@@ -262,10 +245,6 @@ function connectWebSocket() {
         price: data.price,
         volume: data.volume
       })
-      // 只保留当天时间段内的数据
-      if (timelineData.value.length > timelineXAxis.value.length) {
-        timelineData.value.shift()
-      }
     } catch (e) {
       console.error('Error parsing message:', e)
     }
@@ -292,26 +271,20 @@ function connectWebSocket() {
   }
 }
 
-function isTradingTime() {
-  const now = new Date()
-  const h = now.getHours()
-  const m = now.getMinutes()
-  // 9:30 ~ 15:00
-  if ((h < 9 || h > 15) ) {
-    return false
-  }
-  if ((h === 9 && h < 30) ) {
-    return false
-  }
-  return true
-}
-
 onMounted(async () => {
   await fetchStock()
+  // 验证是否在交易时间
+  try {
+    const res = await axios.get('/api/is_market_open', { params: { symbol } })
+    isTradingTime.value = res.data.is_open
+  } catch (e) {
+    console.error('is_market_open check failed', e)
+    isTradingTime.value = false
+  }
   if (chartType.value === 'kline') {
     await renderKline()
   } else {
-    if (isTradingTime()) {
+    if (isTradingTime.value) {
       ensureWebSocketConnection()
     } else {
       loadLatestTimelineData()
@@ -338,7 +311,7 @@ function switchChartType(type) {
     nextTick(() => renderKline())
   } else {
     chartType.value = type
-    if (isTradingTime()) {
+    if (isTradingTime.value) {
       ensureWebSocketConnection()
     } else {
       loadLatestTimelineData()
@@ -352,8 +325,6 @@ async function loadLatestTimelineData() {
     const res = await axios.get('/api/timeline', { params: { symbol } })
     // 假设返回格式为 [{time, price, volume}]
     const raw = res.data || []
-    // 格式化并填充到timelineXAxis，确保 price/volume 为数字，使用向前填充(last-known)策略
-    const map = new Map()
     raw.forEach(item => {
       let tstr = item.time
       if (typeof tstr === 'number') {
@@ -375,30 +346,22 @@ async function loadLatestTimelineData() {
       }
       const price = Number(item.price ?? item.close ?? 0)
       const volume = Number(item.volume ?? 0)
-      map.set(tstr, { price, volume })
+      timelineData.value.push({
+        time: tstr,
+        price: price,
+        volume: volume
+      })
     })
-    let lastPrice = null
-    timelineData.value = timelineXAxis.value.map(t => {
-      const v = map.get(t)
-      let price = null
-      let volume = null
-      if (v) {
-        price = isFinite(v.price) ? v.price : null
-        volume = isFinite(v.volume) ? v.volume : 0
+    let lastPrice = raw[0]?.price ?? null
+    timelineData.value.forEach(item => {
+      if (item.price != null) {
+        lastPrice = item.price
+      } else if (lastPrice != null) {
+        item.price = lastPrice
       }
-      if (price == null) {
-        // forward-fill with last known price
-        price = lastPrice
-      }
-      if (price == null) {
-        price = 0
-      }
-      lastPrice = price
-      return { time: t, price, volume: volume ?? 0 }
     })
   } catch (e) {
     console.error('loadLatestTimelineData failed', e)
-    timelineData.value = timelineXAxis.value.map(t => ({ time: t, price: null, volume: null }))
   }
 }
 
