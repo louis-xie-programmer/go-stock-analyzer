@@ -11,6 +11,7 @@
   - `fetcher/`：外部行情抓取逻辑（Sina API）、指标计算
   - `storage/`：SQLite 初始化与 CRUD（`db.go`）
   - `strategy/`：示例策略（MA、MACD、DSL、Composite）
+  - `strategyexec/`：动态策略执行引擎（基于 yaegi 解释器）
   - `scheduler/`：定时任务调度（拉取 K 线并触发策略）
   - `realtime/`：WebSocket Hub 与 polling 广播逻辑
   - `web/`：HTTP API 路由与处理器
@@ -103,6 +104,11 @@ npm run dev
 - 把 SQLite 替换为可选的持久层（Postgres / MySQL），并提供迁移脚本。
 - 优化抓取并发与限频策略（加入重试/退避、rate limiter）。
 - 增强前端交互：策略编辑器、回测可视化、自定义 watchlist 管理。
+- 扩展动态策略执行：
+  - 为策略提供更多内置函数（技术指标、统计函数）
+  - 支持策略之间的组合与引用
+  - 添加策略性能分析与优化建议
+  - 提供更多策略模板与示例
 
 ## 贡献
 
@@ -296,6 +302,59 @@ ma5 > ma10 && volume > sma(volume, 20) * 1.5
 3. 将命中的信号写入 `results` 表，并（可选）通过 WebSocket 推送给在线客户端。
 
 示例：在前端提供回测按钮会触发 API（或在本地调用策略函数）生成回测报告，报告包含命中日期、收益统计与基本可视化数据。
+
+### 动态策略执行（Go 源码）
+
+除了 DSL 表达式，系统还支持直接执行 Go 源码形式的策略。这种方式更灵活，可以使用完整的 Go 语言特性，适合复杂策略的实现。
+
+策略需要实现以下函数签名（在前端编辑器或配置中提供源码）：
+
+```go
+// Match 函数接收股票代码和 K 线数据，返回是否满足策略条件
+func Match(symbol string, klines []map[string]interface{}) bool {
+    // 在这里实现策略逻辑
+    if len(klines) < 20 {
+        return false
+    }
+    
+    // 示例：判断最近收盘价是否连续上涨
+    latest := klines[len(klines)-1]["Close"].(float64)
+    prev := klines[len(klines)-2]["Close"].(float64)
+    prevPrev := klines[len(klines)-3]["Close"].(float64)
+    
+    return latest > prev && prev > prevPrev
+}
+```
+
+系统使用 yaegi 解释器在安全的环境中执行策略代码。主要特点：
+
+1. 超时控制
+   - 总执行超时（默认 30s）
+   - 每只股票超时（默认 800ms）
+
+2. 安全性
+   - 代码在隔离环境中执行
+   - 运行时错误不会影响主程序
+   - panic 会被捕获并跳过当前股票
+
+3. 上下文与数据
+   - K 线数据以 map 形式提供
+   - 支持访问标准库函数
+   - 可以在策略中实现技术指标计算
+
+使用示例：
+
+```go
+code := `
+func Match(symbol string, klines []map[string]interface{}) bool {
+    // 你的策略逻辑
+    return true
+}
+`
+matches, err := strategyexec.ExecuteStrategy(code, symbols, 60, storage.GetKLines, strategyexec.DefaultExecConfig)
+```
+
+注意：动态执行会比预编译策略稍慢，建议在回测场景使用，实时信号生成优先使用预编译策略。
 
 ### 常用调试命令与快速检查
 
