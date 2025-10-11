@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -109,4 +110,69 @@ func RunStrategyHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"matches": matches, "duration_ms": duration.Milliseconds()})
+}
+
+// GET /api/strategy 查询所有策略
+func ListStrategiesHandler(c *gin.Context) {
+	list, err := storage.ListStrategiesDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"list": list})
+}
+
+// PUT /api/strategy/:id 修改策略
+func UpdateStrategyHandler(c *gin.Context) {
+	var body struct {
+		Name   string `json:"name"`
+		Desc   string `json:"description"`
+		Code   string `json:"code"`
+		Author string `json:"author"`
+	}
+	idStr := c.Param("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"})
+		return
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
+		return
+	}
+	s := &storage.Strategy{
+		ID:     id,
+		Name:   body.Name,
+		Desc:   body.Desc,
+		Code:   body.Code,
+		Author: body.Author,
+	}
+	if err := storage.UpdateStrategyDB(s); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"id": id})
+}
+
+// DELETE /api/strategy/:id 删除策略
+func DeleteStrategyHandler(c *gin.Context) {
+	idStr := c.Param("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"})
+		return
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	if err := storage.DeleteStrategyDB(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"id": id})
 }

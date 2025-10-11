@@ -3,5 +3,8 @@
 /results
 /frontend/node_modules
 /bin
-/stock.db
-/stock.db*
+*.db
+*.db*
+backend/stock.db
+backend/stock.db-shm
+backend/stock.db-wal

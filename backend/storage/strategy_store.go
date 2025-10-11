@@ -98,3 +98,9 @@ func SaveStrategyRunLog(strategyID int64, target string, matchesCount int, durat
 		strategyID, target, matchesCount, durationMs, errStr, time.Now())
 	return err
 }
+
+// DeleteStrategyDB 根据 id 删除策略
+func DeleteStrategyDB(id int64) error {
+	_, err := db.Exec(`DELETE FROM strategies WHERE id=?`, id)
+	return err
+}
