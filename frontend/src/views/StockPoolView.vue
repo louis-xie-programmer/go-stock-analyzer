@@ -6,17 +6,24 @@
       <button @click="fetchData">搜索</button>
       <button @click="refresh">刷新</button>
     </div>
-    <table border="1" cellpadding="6">
-      <tr><th>代码</th><th>名称</th><th>现价</th><th>操作</th></tr>
-      <tr v-for="s in stocks" :key="s.symbol">
-        <td><router-link :to="`/stocks/${s.symbol}`">{{ s.code }}</router-link></td>
-        <td><router-link :to="`/stocks/${s.symbol}`">{{ s.name }}</router-link></td>
-        <td>{{ s.trade }}</td>
-        <td>
-          <button @click="addToWatchlist(s)">加入自选</button>
-        </td>
-      </tr>
-    </table>
+    <el-table :data="stocks" style="width: 100%; margin-top: 20px;">
+      <el-table-column prop="code" label="代码" width="100">
+        <template #default="scope">
+          <router-link :to="`/stocks/${scope.row.symbol}`">{{ scope.row.code }}</router-link>
+        </template>
+      </el-table-column>
+      <el-table-column prop="name" label="名称">
+        <template #default="scope">
+          <router-link :to="`/stocks/${scope.row.symbol}`">{{ scope.row.name }}</router-link>
+        </template>
+      </el-table-column>
+      <el-table-column prop="trade" label="现价" width="100"/>
+      <el-table-column label="操作" width="120">
+        <template #default="scope">
+          <el-button size="small" type="primary" @click="addToWatchlist(scope.row)">加入自选</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 

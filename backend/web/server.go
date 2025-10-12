@@ -23,7 +23,12 @@ func RunServer() {
 	r.GET("/api/kline", GetKLineHandler)
 	r.GET("/api/timeline", GetTimelineHandler)
 	r.GET("/api/is_market_open", IsMarketOpenHandler)
+
+	r.GET("/api/strategy/list", ListStrategiesHandler)
 	r.POST("/api/strategy/run", RunStrategyHandler)
+	r.PUT("/api/strategy/:id", UpdateStrategyHandler)
+	r.DELETE("/api/strategy/:id", DeleteStrategyHandler)
+	r.POST("/api/strategy", SaveStrategyHandler)
 
 	// websocket endpoint for realtime
 	r.GET("/ws/realtime", func(c *gin.Context) {

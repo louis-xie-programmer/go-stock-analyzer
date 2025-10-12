@@ -6,15 +6,16 @@
     </div>
     <div v-if="selected">
       <h3>{{ selected }}</h3>
-      <table border="1" cellpadding="6">
-        <tr><th>代码</th><th>名称</th><th>现价</th><th>操作</th></tr>
-        <tr v-for="s in list" :key="s.symbol">
-          <td>{{ s.code }}</td>
-          <td>{{ s.name }}</td>
-          <td>{{ s.trade }}</td>
-          <td><button @click="addToWatch(s)">加入自选</button></td>
-        </tr>
-      </table>
+      <el-table :data="list" style="width: 100%; margin-top: 20px;">
+        <el-table-column prop="code" label="代码" width="100"/>
+        <el-table-column prop="name" label="名称"/>
+        <el-table-column prop="trade" label="现价" width="100"/>
+        <el-table-column label="操作" width="120">
+          <template #default="scope">
+            <el-button size="small" type="primary" @click="addToWatch(scope.row)">加入自选</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
   </div>
 </template>
@@ -22,6 +23,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { ElTable } from 'element-plus'
 
 const boards = ["上证主板","深证主板","创业板","科创板"]
 const selected = ref("")
@@ -43,6 +45,7 @@ async function addToWatch(s) {
 }
 
 onMounted(() => {
+  console.log('BoardView mounted')
   // default select first
   selectBoard(boards[0])
 })

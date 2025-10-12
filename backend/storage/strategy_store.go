@@ -2,6 +2,7 @@ package storage
 
 import (
 	"time"
+	"fmt"
 )
 
 // Strategy 持久化策略结构
@@ -75,6 +76,7 @@ func GetStrategyDB(id int64) (*Strategy, error) {
 func ListStrategiesDB() ([]Strategy, error) {
 	rows, err := db.Query(`SELECT id,name,description,author,created_at,updated_at FROM strategies ORDER BY created_at DESC`)
 	if err != nil {
+		fmt.Println("ListStrategiesDB error:", err)
 		return nil, err
 	}
 	defer rows.Close()

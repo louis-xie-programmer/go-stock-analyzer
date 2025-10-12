@@ -112,7 +112,7 @@ func RunStrategyHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"matches": matches, "duration_ms": duration.Milliseconds()})
 }
 
-// GET /api/strategy 查询所有策略
+// GET /api/strategy/list 查询所有策略
 func ListStrategiesHandler(c *gin.Context) {
 	list, err := storage.ListStrategiesDB()
 	if err != nil {

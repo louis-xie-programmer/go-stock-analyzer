@@ -4,17 +4,20 @@
     <div style="margin-bottom:10px">
       <button @click="fetchWatchlist">刷新</button>
     </div>
-    <table border="1" cellpadding="6">
-      <tr><th>代码</th><th>名称</th><th>添加时间</th><th>操作</th></tr>
-      <tr v-for="s in watchlist" :key="s.symbol">
-        <td><router-link :to="`/stocks/${s.symbol}`">{{ s.symbol }}</router-link></td>
-        <td><router-link :to="`/stocks/${s.symbol}`">{{ s.name }}</router-link></td>
-        <td>{{ s.added_at }}</td>
-        <td>
-          <button @click="removeFromWatchlist(s)">移除</button>
-        </td>
-      </tr>
-    </table>
+    <el-table :data="watchlist" style="width: 100%; margin-top: 20px;">
+      <el-table-column prop="symbol" label="代码" width="100">
+        <template #default="scope">
+          <router-link :to="`/stocks/${scope.row.symbol}`">{{ scope.row.symbol }}</router-link>
+        </template>
+      </el-table-column>
+      <el-table-column prop="name" label="名称"/>
+      <el-table-column prop="added_at" label="添加时间"/>
+      <el-table-column label="操作" width="120">
+        <template #default="scope">
+          <el-button size="small" type="danger" @click="removeFromWatchlist(scope.row)">移除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 

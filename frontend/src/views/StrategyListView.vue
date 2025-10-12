@@ -79,7 +79,7 @@ function formatDate(row, column, cellValue) {
 }
 
 function fetchStrategies() {
-  axios.get('/api/strategy').then(res => {
+  axios.get('/api/strategy/list').then(res => {
     strategies.value = res.data.list || []
   })
 }

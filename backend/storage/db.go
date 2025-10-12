@@ -81,12 +81,17 @@ func InitDB(path string) error {
 	if _, err = db.Exec(klineSQL); err != nil {
 		return err
 	}
-  // 策略结果表
+    // 策略结果表
 	resultsSQL := `CREATE TABLE IF NOT EXISTS results (
 		code TEXT, date TEXT, strategy TEXT,
 		PRIMARY KEY(code,date,strategy)
 	);`
 	if _, err = db.Exec(resultsSQL); err != nil {
+		return err
+	}
+
+	err = InitStrategyTable()
+	if err != nil {
 		return err
 	}
 
