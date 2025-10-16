@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/traefik/yaegi v0.16.1
+	github.com/yalue/onnxruntime_go v1.21.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 

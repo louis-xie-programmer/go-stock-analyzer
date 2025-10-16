@@ -24,7 +24,7 @@
         <el-form-item label="名称"><el-input v-model="form.name"/></el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description"/></el-form-item>
         <el-form-item label="作者"><el-input v-model="form.author"/></el-form-item>
-        <el-form-item label="代码"><el-input type="textarea" v-model="form.code" rows="6"/></el-form-item>
+        <el-form-item label="代码"><el-input type="textarea" v-model="form.code" placeholder="//必须实现：Match(symbol string, klines []map[string]interface{}) bool" rows="6"/></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
