@@ -4,6 +4,9 @@
 
 本仓库以 Go 作为后端、Vue（Vite）作为前端，使用 SQLite 做为单文件数据库，演示了从数据抓取到策略执行和 Web / WebSocket 推送的完整流程。适合作为学习、二次开发或构建原型的起点。
 
+详细的内容介绍全在微信公众号中。干货持续更新，敬请关注「代码扳手」微信公众号：
+<img width="430" height="430" alt="image" src="https://github.com/user-attachments/assets/bf5948e8-5d4f-431e-b1b3-e80a135630a8" />
+
 ## 目录结构（摘录）
 
 - `backend/`：后端 Go 服务代码（入口：`backend/main.go`）
